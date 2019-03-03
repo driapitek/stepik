@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1551629063469.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "AA8CF5F1",
+    "lastKnownWriteTime" : 6,
+    "last_content_update" : 1551629063469,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "6ECFCB96",
+        "caption" : "anova",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=anova&cache_key=6ECFCB96",
+        "displayedObservations" : 60,
+        "environment" : "",
+        "object" : "anova",
+        "preview" : 0,
+        "totalObservations" : 60,
+        "variables" : 4
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

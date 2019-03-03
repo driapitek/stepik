@@ -1,0 +1,71 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(tidyverse)
+```
+
+В эксперименте сравнивалась эффективность четырех различных типов терапии.
+
+В качестве независимой переменной выступает `Therapy`
+
+В качестве зависимой переменной будет выступать уровень экспрессии гена
+
+```{r}
+genetherapy <- read_csv("genetherapy.csv")
+
+anova <- genetherapy %>%
+  group_by(Therapy) %>%
+  mutate(
+    mean = mean(expr),
+    sd = sd(expr)
+  )
+
+ggplot(anova, aes(Therapy, expr)) +
+  geom_boxplot()
+```
+
+Нулевая гипотеза --- В генеральной совокупности средний уровень экспрессии гена не различается между собой.
+
+```{r}
+k <- aov(expr~Therapy, data = genetherapy)
+summary(k)
+?aov
+```
+
+Рассматриваем `Therapy`
+
+* `Sum Sq` = SSB. 
+
+* `Df` = $m - 1$ число степеней свободы
+
+* `Mean Sq` = $\frac{SSB}{dF} $ межгрупповой средний квадрат
+
+* `F value` --- F-значение
+
+*`Pr(>F)` P-уровень значимости. В данном случае он равен `0.000152`, что много меньше чем $p < 0,05$ что говорит о том, что можно отклонить нулевую гипотезу. Это означает, что как минимум есть одна пара из четырёх значений, у которых есть статистически значимое различие.
+
+Визуализируем полученные данные
+
+```{r}
+gr_df <- group_by(genetherapy, Therapy)
+se_data <- summarise(gr_df, mean_expr= mean(expr),
+                    y_max=mean(expr)+1.96*sd(expr)/sqrt(length(expr)),
+                    y_min=mean(expr)-1.96*sd(expr)/sqrt(length(expr)))
+
+ggplot(se_data, aes(factor(Therapy), mean_expr))+
+             geom_errorbar(aes(ymin=y_min, ymax=y_max), width=0.2, lwd=1)+
+             geom_point(shape=21, size=3, fill='white')+
+             labs(x = "",
+                  title ="Уровень экспрессии гена при различной терапии",
+                  subtitle = "F(3, 56) = 8.037, p < 0,05")+
+             scale_y_continuous(name='Уровень экспрессии', 
+                                limits = c(90, 102.5), 
+                                breaks = seq(90,102.5,2.5))+
+             scale_x_discrete(labels=c('Терапия А', 'Терапия B', 'Терапия C', 'Терапия D'))+
+             theme(plot.title = element_text(hjust=0.5))
+```
+
+
