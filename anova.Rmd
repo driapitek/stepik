@@ -3,9 +3,16 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+
+## Однофакторный дисперсионный анализ
+
+### Библиотеки для работы
+
 ```{r}
 library(tidyverse)
 ```
+
+### Исходные данные
 
 В эксперименте сравнивалась эффективность четырех различных типов терапии.
 
@@ -15,23 +22,33 @@ library(tidyverse)
 
 ```{r}
 genetherapy <- read_csv("genetherapy.csv")
+genetherapy
+```
 
-anova <- genetherapy %>%
+### Анализ
+
+Посмотрим как распределены данные
+
+```{r}
+genetherapy %>%
   group_by(Therapy) %>%
   mutate(
     mean = mean(expr),
     sd = sd(expr)
-  )
-
-ggplot(anova, aes(Therapy, expr)) +
+  ) %>%
+  ggplot(aes(Therapy, expr)) +
   geom_boxplot()
 ```
 
-Нулевая гипотеза --- В генеральной совокупности средний уровень экспрессии гена не различается между собой.
+Нулевая гипотеза --- в генеральной совокупности средний уровень экспрессии гена не различается между собой.
+Альтернативная --- хотя бы одна пара не равна между собой
+
+$$H_0 :\mu_1 = \mu_2 = \mu_3 = \mu_4$$
+В грубой форме альтернативная гипотеза записывается так:
+$$H_1 :\mu_1 \neq \mu_2 \neq \mu_3 \neq \mu_4$$
 
 ```{r}
-k <- aov(expr~Therapy, data = genetherapy)
-summary(k)
+summary(aov(expr~Therapy, data = genetherapy))
 ?aov
 ```
 
@@ -50,22 +67,22 @@ summary(k)
 Визуализируем полученные данные
 
 ```{r}
-gr_df <- group_by(genetherapy, Therapy)
-se_data <- summarise(gr_df, mean_expr= mean(expr),
-                    y_max=mean(expr)+1.96*sd(expr)/sqrt(length(expr)),
-                    y_min=mean(expr)-1.96*sd(expr)/sqrt(length(expr)))
+se_data <- genetherapy %>%
+  group_by(Therapy) %>%
+  summarise(mean_expr = mean(expr),
+            y_max = mean(expr) + 1.96*sd(expr) / sqrt(length(expr)),
+            y_min = mean(expr) - 1.96*sd(expr) / sqrt(length(expr)))
 
-ggplot(se_data, aes(factor(Therapy), mean_expr))+
-             geom_errorbar(aes(ymin=y_min, ymax=y_max), width=0.2, lwd=1)+
-             geom_point(shape=21, size=3, fill='white')+
+ggplot(se_data, aes(factor(Therapy), mean_expr)) +
+             geom_errorbar(aes(ymin = y_min, ymax = y_max), width = 0.1, lwd = 0.5) +
+             geom_point(shape = 21, size = 3, fill = 'white') +
              labs(x = "",
+                  y = "Уровень экспрессии",
                   title ="Уровень экспрессии гена при различной терапии",
-                  subtitle = "F(3, 56) = 8.037, p < 0,05")+
-             scale_y_continuous(name='Уровень экспрессии', 
-                                limits = c(90, 102.5), 
-                                breaks = seq(90,102.5,2.5))+
-             scale_x_discrete(labels=c('Терапия А', 'Терапия B', 'Терапия C', 'Терапия D'))+
-             theme(plot.title = element_text(hjust=0.5))
+                  subtitle = "F(3, 56) = 8.037, p < 0,05") +
+             scale_y_continuous(limits = c(90, 102.5), 
+                                breaks = seq(90, 102.5, 2.5)) +
+             scale_x_discrete(labels = c('Терапия А', 'Терапия B', 'Терапия C', 'Терапия D'))
 ```
 
 
