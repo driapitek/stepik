@@ -4,7 +4,11 @@ editor_options:
   chunk_output_type: console
 ---
 
+# Сравнение средних
+
 ## Однофакторный дисперсионный анализ
+
+Больше материала по ссылке <https://stat.ethz.ch/~meier/teaching/anova/index.html>
 
 ### Библиотеки для работы
 
@@ -85,4 +89,61 @@ ggplot(se_data, aes(factor(Therapy), mean_expr)) +
              scale_x_discrete(labels = c('Терапия А', 'Терапия B', 'Терапия C', 'Терапия D'))
 ```
 
+### Множественные сравнения
 
+Чем выше количество групп, тем выше вероятность получить при попарном сравнении хотя бы одно значимое различие.
+
+Одно из решений --- поправка Бон-Ферони. КОторая говорит что нужно домножить на поправочный коэффициент.
+
+Однако такая поправка консервативна и занижает множество потенциальных открытий.
+
+Решение --- другие способы попарного сравнения. Одно из них --- критерий Тьюки
+
+### Критерий Тьюки
+
+### Интерпретация результатов
+
+Статистика и плохая наука: как поправка на множественные сравнения объясняет парадоксальные результаты исследований
+
+[Доклад на тему проблем статистического анализа](https://www.youtube.com/watch?v=dcVG0NtZMwE)
+
+### Двухфакторный дисперсионный анализ
+
+```{r}
+athero <- read_csv("atherosclerosis.csv")
+birds <- read_csv("birds.csv")
+
+summary(athero)
+summary(aov(expr~age, data = athero))
+summary(aov(expr~dose, data = athero))
+
+
+athero <-  athero %>%
+  group_by(age, dose) %>%
+  summarise(mean_expr = mean(expr),
+            y_max = mean(expr) + 1.96*sd(expr) / sqrt(length(expr)),
+            y_min = mean(expr) - 1.96*sd(expr) / sqrt(length(expr)))
+?labs
+```
+
+Строим графики
+
+```{r}
+ggplot(athero, aes(factor(dose), mean_expr, color = factor(age))) +
+             geom_errorbar(aes(ymin = y_min, ymax = y_max), width = 0.1, lwd = 0.5) +
+             geom_point(shape = 21, size = 3, fill = 'white') +
+             labs(x = "Дозировка",
+                  y = "Уровень экспрессии",
+                  title ="Экспрессия гена в зависимости от дозировки лекарства и возраста пациентов",
+                  color = "Возраст") +
+  scale_x_discrete(labels = c('Низкая', 'Высокая')) + 
+  scale_color_discrete(labels = c('молодые', 'старые'))
+```
+
+Значимый оказался эффект возраста, но не для факта дозировки
+
+```{r}
+summary(aov(var4~sex, data = birds))
+summary(aov(var4~hormone, data = birds))
+summary(aov(var4~hormone:sex, data = birds))
+```
