@@ -123,7 +123,6 @@ athero <-  athero %>%
   summarise(mean_expr = mean(expr),
             y_max = mean(expr) + 1.96*sd(expr) / sqrt(length(expr)),
             y_min = mean(expr) - 1.96*sd(expr) / sqrt(length(expr)))
-?labs
 ```
 
 Строим графики
