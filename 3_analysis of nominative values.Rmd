@@ -759,3 +759,94 @@ str(iris$important_cases)
 table(iris$important_cases)
 ```
 
+### Задача
+
+Обобщим предыдущую задачу! Напишем функцию get_important_cases, которая принимает на вход dataframe с произвольным числом количественных переменных (гарантируется хотя бы две переменные). Функция должна возвращать dataframe с новой переменной - фактором important_cases.
+
+Переменная  important_cases принимает значение Yes, если для данного наблюдения больше половины количественных переменных имеют значения больше среднего. В противном случае переменная important_cases принимает значение No.
+
+Переменная  important_cases - фактор с двумя уровнями 0 - "No", 1  - "Yes".  То есть даже если в каком-то из тестов все наблюдения получили значения "No", фактор должен иметь две градации. 
+
+
+#### Решение
+
+Всё просто. По сравнению с предыдущим примером, мы добавляем общее условие `length(df)/2` т.е. больше половины.
+
+А так же обобщаем уровень факторов.
+
+```{r}
+test_data <- data.frame(V1 = c(16, 21, 18), 
+V2 = c(17, 7, 16), 
+V3 = c(25, 23, 27), 
+V4 = c(20, 22, 18), 
+V5 = c(16, 17, 19))
+
+
+
+get_important_cases <- function(df){
+df$important_cases <- ifelse(rowSums(t(t(df) > sapply(df, mean))) > length(df)/2, 1, 0)
+df$important_cases <- factor(df$important_cases, levels = c(1, 0), labels = c("Yes", "No"))
+return(df)
+}
+
+get_important_cases(test_data)
+```
+
+
+### Задача
+
+Напишите функцию stat_mode, которая получает на вход вектор из чисел произвольной длины и возвращает числовой вектор с наиболее часто встречаемым значением. Если наиболее часто встречаемых значений несколько, функция должна возвращать несколько значений моды  в виде числового вектора. 
+
+#### Решение
+
+```{r}
+v <- c(1, 2, 3, 3, 3, 4, 5)
+v1 <- c(1, 1, 1, 2, 3, 3, 3)
+v2 <- c(5,9,20,8,11,7,2,7,7,18,17,15,2,11)
+
+
+stat_mode <- function(v){
+  result <- names(which(table(v) == max(table(v))))
+  return(as.integer(result))
+  }
+
+stat_mode(v2)
+```
+
+### Задача
+
+Доктор Пилюлькин решил вооружиться статистикой, чтобы сравнить эффективность трех лекарств! Давайте поможем ему и напишем функцию max_resid, которая получает на вход dataframe с двумя переменными: типом лекарства и результатом его применения. 
+
+Drugs - фактор с тремя градациями: drug_1, drug_2, drug_3.     
+
+Result - фактор с двумя градациями: positive, negative.
+
+Функция должна находить ячейку таблицы сопряженности с максимальным  значением стандартизированного остатка и возвращать вектор из двух элементов: название строчки и столбца этой ячейки.
+
+#### Решение
+
+```{r}
+test_data <- read.csv("https://stepic.org/media/attachments/course/524/test_drugs.csv")
+
+max_resid <- function(x){
+  table_resid <- chisq.test(table(x))$stdres
+  result <- c(rownames(which(table_resid == max(table_resid), arr.ind = TRUE)), 
+    rownames(which(t(table_resid) == max(table_resid), arr.ind = TRUE)))
+  return(result)
+}
+
+max_resid(test_data)
+```
+
+### Задача
+
+```{r}
+library(tidyverse)
+str(diamonds)
+
+ggplot(diamonds, aes(color, fill = cut)) +
+  geom_bar(position = "dodge")
+
+```
+
+
