@@ -926,13 +926,101 @@ normality_test <- function(dataset){
 
 #### Решение
 
+Подготовим данные
 ```{r}
+library("tidyverse")
 test_data <- read.csv("https://stepic.org/media/attachments/course/524/s_anova_test.csv")
 str(test_data)
 
+
+# Я использовал конвейеры, для упрощения кода
+td <- test_data %>% 
+  group_by(y) %>%
+  summarise(p.value = shapiro.test(x)$p.value)
+
+# тут всё просто, по обеим проверкам тесты должны быть отрицательные. Т.е. суммарно по всем должен быть ноль
+sum(c(td$p.value < 0.05), bartlett.test(x~y, test_data)$p.value < 0.05) == 0
+
+# Это подсказка как вытащить значение p.value из дисперсионного анализа
+fit <- aov(x~y, test_data)
+p_value <- summary(fit)[[1]]$'Pr(>F)'[1]
+```
+
+Переводим решение в функцию
+
+
+```{r}
+smart_anova <- function(test_data){
+  library("dplyr")
+  td <- test_data %>% 
+    group_by(y) %>%
+    summarise(p.value = shapiro.test(x)$p.value)
+  if(sum(c(td$p.value < 0.05), bartlett.test(x~y, test_data)$p.value < 0.05) == 0) {
+   shapiro_test <- aov(x~y, test_data)
+   p_value <- summary(shapiro_test)[[1]]$'Pr(>F)'[1]
+   names(p_value) <- "ANOVA"
+   return(p_value) 
+  } else {
+    p_value <- kruskal.test(x~y, test_data)$p.value
+    names(p_value) <- "KW"
+    return(p_value)
+  }
+}
+```
+
+
+### Задача
+
+Напишите функцию normality_by, которая принимает на вход dataframe c тремя переменными. Первая переменная количественная, вторая и третья имеют две градации и разбивают наши наблюдения на группы. Функция должна проверять распределение на нормальность в каждой получившейся группе и возвращать dataframe с результатами применения теста shapiro.test (формат вывода смотри ниже).
+
+#### Решение
+
+ПОдготовим данные
+
+```{r}
+test_data <- read.csv("https://stepic.org/media/attachments/course/524/test_for_norm.csv")
+str(test_data)
+```
+
+Перейдём к решению
+```{r}
+library("dplyr")
 test_data %>% 
-  group_by(y)
+  group_by(y, z) %>% 
+  summarise(p.value = shapiro.test(x)$p.value)
 
 
+normality_by <- function(test){
+library("dplyr")
+test %>% 
+  group_by(y, z) %>% 
+  summarise(p_value = shapiro.test(x)$p.value)
+}
+
+# Более общее решениее
+library(dplyr)    
+get_p_value <- function(x){      
+	shapiro.test(x)$p.value    
+}    
+normality_by <- function(test){    
+	grouped <- test %>%    
+		group_by_(.dots = colnames(.)[2:3]) %>%         
+		summarise_each(funs(get_p_value))         
+		names(grouped)[3] <- 'p_value'         
+		return(grouped)         
+}
+```
+
+### Задача
+
+Tесты тестами, а графики никто не отменял! Мой вам совет: всегда визуализируйте ваши переменные и их взаимосвязи. Иногда то, что сразу становится видным на графике (например, выброс или очевидно странная форма распределения), может ускользнуть от внимания во время статистического анализа. 
+
+При помощи библиотеки ggplot2 визуализируйте распределение переменной Sepal.Length в трех группах в данных Iris. Сохраните график в переменную obj, но не выводите график на печать.
+
+#### Решение
+
+```{r}
+ggplot(iris, aes(Sepal.Length, fill = Species)) + 
+  geom_density(alpha = 0.2)
 ```
 
