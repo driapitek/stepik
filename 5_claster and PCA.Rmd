@@ -402,11 +402,79 @@ get_difference <-  function(test_data, n_cluster){
 ```
 
 
+
+```{r}
+get_difference <-  function(test_data, n_cluster){
+    dist_matrix <- dist(test_data, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+    fit <- hclust(dist_matrix)
+    cluster <- cutree(fit, n_cluster)
+    test_data$cluster <- as.factor(cluster)
+    anova <- aov(cluster~., test_data)
+    p_value <- summary(anova)[[1]]$'Pr(>F)'
+    index <- p_value[!is.na(p_value)] < 0.05
+    factor <- colnames(test_data)[index]
+    return(factor)
+}
+```
+
 Тестируем
 
 ```{r}
 test_data_cluster <- read.csv("https://stepic.org/media/attachments/course/524/cluster_2.csv")
 get_difference(test_data_cluster, 2)
+get_difference(test_data, 2)
 
+dist_matrix <- dist(test_data_cluster, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+    fit <- hclust(dist_matrix)
+    cluster <- cutree(fit, 2)
+    test_data_cluster$cluster <- cluster
+    anova <- aov(cluster~., test_data_cluster)
+    p_value <- summary(anova)[[1]]$'Pr(>F)'
+    index <- p_value[!is.na(p_value)] < 0.05
+    factor <- colnames(test_data_cluster)[-length(test_data_cluster)][index]
+
+str(test_data_cluster)
+```
+
+
+```{r}
+get_difference <-  function(test_data, n_cluster){
+  dist_matrix <- dist(test_data, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+  fit <- hclust(dist_matrix)
+  test_data$cluster <- cutree(fit, n_cluster)
+  anova <- aov(cluster~., test_data)
+  p_value <- summary(anova)[[1]]$'Pr(>F)'
+  index <- p_value[!is.na(p_value)] < 0.05
+  factor <- colnames(test_data)[-length(test_data)][index]
+  return(as.factor(factor))
+}
+
+test_data1 <- as.data.frame(list(X1 = c(8, 11, 6, 7, 7, 9, 18, 19, 21, 18, 22, 18), X2 = c(9, 11, 13, 12, 6, 8, 19, 20, 21, 21, 22, 20), X3 = c(9, 7, 10, 6, 8, 8, 19, 19, 18, 12, 17, 25), X4 = c(11, 11, 12, 8, 19, 11, 19, 25, 21, 18, 17, 14), X5 = c(9, 15, 7, 16, 10, 11, 20, 23, 23, 19, 19, 21)))
+
+str(get_difference(test_data, 2))
+
+
+dist_matrix <- dist(test_data1, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+fit <- hclust(dist_matrix)
+test_data1$cluster <- as.factor(cutree(fit, 2))
+only_numeric <- test_data1[, sapply(test_data1, is.numeric)]
+p_value <- sapply(only_numeric, function(x)(summary(aov(x~cluster, test_data1))[[1]]$'Pr(>F)'))[1,]
+index <- p_value < 0.05
+factor <- colnames(test_data1)[-length(test_data1)][index]
+
+
+
+get_difference <-  function(test_data, n_cluster){
+  dist_matrix <- dist(test_data, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+  fit <- hclust(dist_matrix)
+  test_data$cluster <- as.factor(cutree(fit, n_cluster))
+  only_numeric <- test_data[, sapply(test_data, is.numeric)]
+  p_value <- sapply(only_numeric, function(x)(summary(aov(x~cluster, test_data))[[1]]$'Pr(>F)'))[1,]
+  index <- p_value < 0.05
+  factor <- colnames(test_data)[-length(test_data)][index]
+  return(as.factor(factor))
+}
+
+get_difference(test_data, 2)
 ```
 
