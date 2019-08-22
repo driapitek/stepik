@@ -607,7 +607,14 @@ str(result)
 #### Решение
 
 ```{r}
-test_data <- read.csv("https://stepic.org/media/attachments/course/524/Norris_2.csv")
+test1 <- read.csv("https://stepic.org/media/attachments/course/524/Norris_1.csv")
+# должен возвращать "There is no collinearity in the data"
+
+test2 <- read.csv("https://stepic.org/media/attachments/course/524/Norris_2.csv")
+# должен возвращать "V2" "V1"
+
+test3 <- read.csv("https://stepic.org/media/attachments/course/524/Norris_3.csv")
+# должен возвращать "V2" "V1" "V4" "V3"
 ```
 
 
@@ -617,72 +624,81 @@ zero_range <- function(x, tol = .Machine$double.eps ^ 0.5) {
   x <- range(x) / mean(x)
   isTRUE(all.equal(x[1], x[2], tolerance = tol))
 }
+
+is_multicol <- function(test_data){
+  combination <- combn(1:length(test_data), 2, simplify = TRUE)
+  result_negative <- test_data[combination[1,]] - test_data[combination[2,]]
+  result_positive <- test_data[combination[1,]] + test_data[combination[2,]]
+  index_minus <- sapply(result_negative, zero_range)
+  index_plus <- sapply(result_positive, zero_range)
+  if(sum(index_plus) == 0 && sum(index_minus) == 0){
+    return("There is no collinearity in the data") 
+  } else {
+    if (sum(index_plus) > 0 && sum(index_minus) == 0){
+     index_positive <- combination[, index_plus]
+     multicol_name_positive <- sapply(index_positive, function(x)(colnames(test_data[x])))
+     return(multicol_name_positive)
+    } else {
+      if(sum(index_plus) == 0 && sum(index_minus) > 0) {
+         index_negative <- combination[, index_minus]
+         multicol_name_negative <- sapply(index_negative, function(x)(colnames(test_data[x])))
+         return(multicol_name_negative)
+      } else{
+        index_positive <- combination[, index_plus]
+        index_negative <- combination[, index_minus]
+        multicol_name_positive <- sapply(index_positive, function(x)(colnames(test_data[x])))
+        multicol_name_negative <- sapply(index_negative, function(x)(colnames(test_data[x])))
+        return(c(multicol_name_negative, multicol_name_positive))
+      }
+    }
+  }
+}
+
+is_multicol(test1)
+is_multicol(test2)
+is_multicol(test3)
+  
 ```
 
+Но это конечно монстр.
+
+Я попарно вычитал и складывал все уникальные комбинации.
+
+Затем смотрел есть ли там одинаковые. И потом выводил результаты.
+
+Вот решение здорового человека. Оно основано на знании математики --- чем меньше дисперсия, тем с большей вероятностью можно сказать что переменные мультиколлинеарны
+
+Проблема, которая может возникнуть с PCA, заключается в том, что если переменные имеют нулевую дисперсию или очень небольшую дисперсию, т. Е. Почти одинаковые значения во всех наблюдениях, PCA разрушается. Кроме того, если подумать о статистической значимости таких данных, можно сказать, что переменная с почти нулевой дисперсией не сильно повлияет на модель.
+
+Вот решение более короткое
+
+```{r}
+is_multicol <- function(d){    
+	d <- abs(cor(d))     
+	d[lower.tri(d)] <- 0    
+	diag(d) <- 0    
+	index <- which((1-d) < 1e-10, arr.ind = T)    
+	if (length(index) == 0){      
+		return('There is no collinearity in the data')    
+	} else {      
+		return(rownames(d)[index])      
+	}      
+}
+```
+
+### Задача
+
+В данных swiss, используя все переменные, выделите два кластера при помощи иерархической кластеризации и сохраните значение кластеров как фактор в переменную cluster. 
+
+#### Решение
 
 
 ```{r}
+library(tidyverse)
+new_swiss <- smart_hclust(swiss, 2)
 
-v <- test_data[,1] - test_data[,1]
-
-data.frame("V1-V1",t(v))
-
-test_data[,1] - test_data[,1:4]
-
-
-test_data[,1] - test_data[,2]
-test_data[,1] - test_data[,3]
-test_data[,1] - test_data[,4]
-
-test_data[,2] - test_data[,1]
-test_data[,2] - test_data[,2]
-test_data[,2] - test_data[,3]
-test_data[,2] - test_data[,4]
-
-test_data[,3] - test_data[,1]
-test_data[,3] - test_data[,2]
-test_data[,3] - test_data[,4]
-
-test_data[,4] - test_data[,1:4]
-
+ggplot(new_swiss, aes(Education, Catholic, color = cluster)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
 ```
 
-Пробуем циклом фор
-
-```{r}
-
-list <- list()
-
-for(i in seq_along(test_data)){
-  list[[i]] <- test_data[, i] - test_data[, 1:length(test_data)]
-}
-
-list[[2]]
-
-
-length(unlist(list))
-
-unique(names(unlist(list)))
-
-score <- matrix(abs(unlist(list)), nrow = nrow(test_data))
-
-dimnames(score) <- list(1:3, col_names)
-
-```
-
-
-
-```{r}
-for(i in seq_along(test_data)){
-  m <- test_data[, i] - test_data[, 1:i]
-}
-
-for(i in seq_along(test_data)){
-  m[[i]] <- test_data[, i] - test_data[, 1:length(test_data)]
-}
-
-```
-
-Подход к решению такой
-
-1. Нахожу поочерёдно разницу всеми столбцами
