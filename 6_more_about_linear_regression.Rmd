@@ -49,4 +49,11 @@ ggplot(mtcars, aes(hp, mpg)) + geom_point() + geom_smooth(method = "lm")
 
 ![Классификация методов статистического вывода](img/tyki.png)
 
+Давайте реализуем несколько преобразований
+
+```{r}
+ggplot(mtcars, aes(hp^0.5, mpg)) + geom_point()
+ggplot(mtcars, aes(hp^-0.5, mpg)) + geom_point()
+ggplot(mtcars, aes(-hp^-0.5, mpg)) + geom_point()
+```
 
