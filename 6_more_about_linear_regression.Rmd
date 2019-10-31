@@ -343,46 +343,23 @@ VIF для предиктора X рассчитывается по формул
 
 де - R2x это R квадрат вспомогательной модели, в которой предиктор X зависимая переменная, а все остальные предикторы - независимые переменные. В формуле vif используется обычный R квадрат, а не исправленный.
 
-```{r}
-
-lapply(mtcars, function(x) lm(mtcars, x ~.))
-
-mtcars(data = mtcars)
-
-```
-
-
-Функция для расчёта R^2 для модели
+Нужно сделать регрессию на все предикторы, кроме себя и самого первого предиката.
 
 ```{r}
-r2 <- function(mod) {
+VIF <-  function(test_data){
+  # r2 it's function for easy calculate of r squared
+  r2 <- function(mod) {
     y <- as.character(terms(mod))[2]
     ss_resid <- sum(mod$residuals^2)
     ss_total <- sum((mod$model[[y]] - mean(mod$model[[y]]))^2)
     1 - ss_resid / ss_total
+  }
+  data = test_data[-1]
+  fit_list <- lapply(seq_along(data), function(x) lm(data = data[-x], data[,x] ~ .))
+  vector <- 1/ (1 - sapply(fit_list, r2))
+  names(vector) <- names(data)
+  return(vector)
 }
 
-fit <- lm(data = mtcars, mpg~.)
-
-summary(fit)
-
-r2(fit)
-
+VIF(mtcars)
 ```
-
-```{r}
-set.seed(1)
-DF <- data.frame(A=rnorm(50, 100, 3),
-                 B=rnorm(50, 100, 3))
-
-fit1 <- lm(data = DF, A ~ B)
-summary(fit1)$r.squared
-
-fit2 <- lm(data = DF, B ~ A)
-summary(fit2)$r.squared
-
-
-apply(DF, 1, function(x) lm(x[2]~x[1])$r.squared)
-
-```
-
