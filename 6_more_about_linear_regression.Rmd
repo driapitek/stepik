@@ -347,7 +347,7 @@ VIF для предиктора X рассчитывается по формул
 
 ```{r}
 VIF <-  function(test_data){
-  # r2 it's function for easy calculate of r squared
+  # r2 it's function for easy calculating r-squared
   r2 <- function(mod) {
     y <- as.character(terms(mod))[2]
     ss_resid <- sum(mod$residuals^2)
@@ -364,8 +364,80 @@ VIF <-  function(test_data){
 VIF(mtcars)
 ```
 
-
 ### Задача 3
+
+Усложним предыдущую задачу, а также используем нашу функцию VIF. Напишите функцию smart_model, которая на вход получает набор данных. Первая колонка в данных - зависимая переменная, остальные колонки - независимые. Функция строит регрессию с этими переменными и проверяет есть ли в модели переменные с показателем vif больше 10. Если хотя бы у одной переменной vif > 10, то из регрессионной модели удаляется переменная с максимальным показателем vif, если после этого в новой модели все еще остались переменные с vif больше 10, то мы опять исключаем из модели переменную с максимальным vif. Таким образом, мы исключаем по одной переменной за раз, пока в модели не останутся независимые переменные с vif не больше 10.
+
+Особая ситуация - это когда в модели два предиктора, и для обоих vif одинаковый и больше 10, в этом случае можно исключить любой из предикторов.
+
+Функция должна возвращать коэффициенты регрессии финальной модели.
+
+```{r}
+fit <- lm(data = mtcars[c(-2,-3)], mpg~.)
+
+VIF(mtcars[c(-2,-3)])
+
+mtcars[names(which(VIF(mtcars) == max(VIF(mtcars))))]
+
+mtcars["disp"]
+
+
+VIF(mtcars) == max(VIF(mtcars))
+
+mtcars[, -which(names(mtcars) %in% c(names(which(VIF(mtcars) == max(VIF(mtcars))))))]
+
+
+
+max(VIF(mtcars)) > 10
+```
+
+```{r}
+smart_model <-  function(test_data){
+  # initiate VIF-function
+  VIF <-  function(test_data){
+    # r2 it's function for easy calculating r-squared
+    r2 <- function(mod) {
+      y <- as.character(terms(mod))[2]
+      ss_resid <- sum(mod$residuals^2)
+      ss_total <- sum((mod$model[[y]] - mean(mod$model[[y]]))^2)
+      1 - ss_resid / ss_total
+      }
+    data = test_data[-1]
+    fit_list <- lapply(seq_along(data), function(x) lm(data = data[-x], data[,x] ~ .))
+    vector <- 1/ (1 - sapply(fit_list, r2))
+    names(vector) <- names(data)
+    return(vector)
+    }
+  # Запускаем поиск переменных с VIF больше 10
+  while (max(VIF(test_data)) > 10) {
+    # проверяю случай, когда только два предиктора
+    if (ncol(test_data) == 3){
+      test_data <- test_data[-2]
+      break
+      } else {
+        # если есть переменная с VIF больше 10, то ищем её имя и удаляем из исходного набора
+        test_data <- test_data[, -which(names(test_data) %in% 
+                                          c(names(which(VIF(test_data) == max(VIF(test_data))))))]
+      }
+    }
+  fit <- lm(test_data[,1] ~ ., test_data[-1])
+  return(fit$coefficients)
+}
+```
+
+Проверяем работу
+
+```{r}
+smart_model(mtcars)
+
+set.seed(42)
+test_data <- data.frame(y = rnorm(30, 5), x1 = rnorm(30, 5))
+test_data$x2 <- test_data$x1^2
+smart_model(test_data)
+```
+
+
+### Задача 4
 
 Давайте реализуем поиск наиболее подходящей степени для трансформации независимой переменной в обычной регрессии, с одним предиктором.
 
